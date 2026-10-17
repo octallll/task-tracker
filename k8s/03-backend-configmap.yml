@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend
+  namespace: task-tracker
+data:
+  PORT: "8080"
+  DB_URL: jdbc:postgresql://postgres:5432/tasktracker
+  LOG_LEVEL: INFO
+...

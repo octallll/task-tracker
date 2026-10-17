@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Task Tracker</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+    <h1>Task Tracker</h1>
+</header>
+
+<div class="layout">
+    <aside class="sidebar">
+        <section>
+            <div class="section-head">
+                <h2>Доски</h2>
+                <button class="icon-btn" id="add-board" title="Новая доска">+</button>
+            </div>
+            <ul class="board-list" id="board-list"></ul>
+        </section>
+
+        <section>
+            <div class="section-head">
+                <h2>Теги</h2>
+            </div>
+            <ul class="tag-list" id="tag-list"></ul>
+            <form class="tag-form" id="tag-form">
+                <input name="name" placeholder="Новый тег" maxlength="50" required>
+                <input name="color" type="color" value="#6b7280" title="Цвет">
+                <button type="submit">+</button>
+            </form>
+        </section>
+    </aside>
+
+    <main class="main">
+        <div class="board-head" id="board-head" hidden>
+            <div>
+                <h2 id="board-title"></h2>
+                <p class="muted" id="board-desc"></p>
+            </div>
+            <div class="board-actions">
+                <button id="add-task" class="primary">+ Задача</button>
+                <button id="edit-board">Изменить</button>
+                <button id="delete-board" class="danger">Удалить</button>
+            </div>
+        </div>
+        <p class="empty" id="empty">Создайте доску слева, чтобы начать.</p>
+        <div class="columns" id="columns" hidden>
+            <div class="column" data-status="TODO"><h3>К выполнению</h3><div class="cards"></div></div>
+            <div class="column" data-status="IN_PROGRESS"><h3>В работе</h3><div class="cards"></div></div>
+            <div class="column" data-status="DONE"><h3>Готово</h3><div class="cards"></div></div>
+        </div>
+    </main>
+</div>
+
+<dialog id="board-dialog">
+    <form method="dialog" id="board-form">
+        <h3 id="board-dialog-title">Доска</h3>
+        <label>Название <input name="name" maxlength="100" required></label>
+        <label>Описание <textarea name="description" maxlength="1000" rows="3"></textarea></label>
+        <div class="dialog-actions">
+            <button value="cancel" formnovalidate>Отмена</button>
+            <button value="save" class="primary">Сохранить</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="task-dialog">
+    <form method="dialog" id="task-form">
+        <h3 id="task-dialog-title">Задача</h3>
+        <label>Заголовок <input name="title" maxlength="200" required></label>
+        <label>Описание <textarea name="description" maxlength="4000" rows="4"></textarea></label>
+        <div class="row">
+            <label>Статус
+                <select name="status">
+                    <option value="TODO">К выполнению</option>
+                    <option value="IN_PROGRESS">В работе</option>
+                    <option value="DONE">Готово</option>
+                </select>
+            </label>
+            <label>Приоритет
+                <select name="priority">
+                    <option value="LOW">Низкий</option>
+                    <option value="MEDIUM">Средний</option>
+                    <option value="HIGH">Высокий</option>
+                </select>
+            </label>
+            <label>Срок <input name="dueDate" type="date"></label>
+        </div>
+        <fieldset>
+            <legend>Теги</legend>
+            <div class="tag-picker" id="tag-picker"></div>
+        </fieldset>
+        <div class="dialog-actions">
+            <button value="delete" id="delete-task" class="danger" formnovalidate>Удалить</button>
+            <span class="spacer"></span>
+            <button value="cancel" formnovalidate>Отмена</button>
+            <button value="save" class="primary">Сохранить</button>
+        </div>
+    </form>
+</dialog>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
