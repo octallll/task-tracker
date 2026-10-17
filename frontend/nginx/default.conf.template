@@ -1,6 +1,35 @@
+map $status $log_level {
+    ~^5     ERROR;
+    ~^4     WARN;
+    default INFO;
+}
+
+map $request_uri $request_path {
+    ~^(?<path>[^?]*) $path;
+}
+
+log_format json escape=json '{'
+    '"@timestamp":"$time_iso8601",'
+    '"log.level":"$log_level",'
+    '"service.name":"task-tracker-frontend",'
+    '"message":"$request_method $request_uri $status",'
+    '"http.request.method":"$request_method",'
+    '"url.path":"$request_path",'
+    '"url.query":"$args",'
+    '"http.response.status_code":$status,'
+    '"http.response.body.bytes":$body_bytes_sent,'
+    '"request_time":$request_time,'
+    '"upstream.address":"$upstream_addr",'
+    '"upstream.response_time":"$upstream_response_time",'
+    '"client.ip":"$remote_addr",'
+    '"user_agent.original":"$http_user_agent"'
+'}';
+
 server {
     listen ${NGINX_PORT};
     server_name _;
+
+    access_log /var/log/nginx/access.log json;
 
     root /usr/share/nginx/html;
     index index.html;

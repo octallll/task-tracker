@@ -22,3 +22,9 @@ management:
 logging:
   level:
     root: ${LOG_LEVEL:INFO}
+  structured:
+    format:
+      console: ecs
+    ecs:
+      service:
+        name: task-tracker-backend
