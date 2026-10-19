@@ -15,6 +15,6 @@ USER app
 
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseSerialGC -XX:TieredStopAtLevel=1" \
     PORT=8080
-EXPOSE 8080
+EXPOSE 8080 8081
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

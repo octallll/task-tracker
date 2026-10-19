@@ -1,5 +1,6 @@
 package task.tracker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -12,8 +13,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.actuate.observability.AutoConfigureObservability;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -26,6 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@AutoConfigureObservability
 @Testcontainers
 class ApiIntegrationTest {
 
@@ -44,6 +48,9 @@ class ApiIntegrationTest {
 
     @Autowired
     ObjectMapper json;
+
+    @Autowired
+    PrometheusMeterRegistry metrics;
 
     private long createAndGetId(String url, String body) throws Exception {
         String response = mvc.perform(post(url).contentType(MediaType.APPLICATION_JSON).content(body))
@@ -100,5 +107,25 @@ class ApiIntegrationTest {
                 .andExpect(status().isConflict());
 
         mvc.perform(get("/api/boards/999999")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void businessMetrics() throws Exception {
+        long boardId = createAndGetId("/api/boards", "{\"name\":\"Метрики\"}");
+        long taskId = createAndGetId(
+                "/api/boards/" + boardId + "/tasks", "{\"title\":\"Задача\",\"priority\":\"LOW\"}");
+        mvc.perform(patch("/api/tasks/" + taskId + "/status")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"DONE\"}"))
+                .andExpect(status().isOk());
+
+        assertThat(metrics.scrape())
+                .contains("tracker_board_creations_total")
+                .contains("tracker_task_creations_total{application=\"task-tracker-backend\",priority=\"LOW\"}")
+                .contains("tracker_task_status_changes_total{application=\"task-tracker-backend\",from=\"TODO\",to=\"DONE\"}")
+                .contains("tracker_tasks_completed_total")
+                .contains("tracker_task_lead_time_seconds_bucket")
+                .contains("tracker_tasks{application=\"task-tracker-backend\",status=\"DONE\"}")
+                .contains("tracker_tasks_overdue");
     }
 }

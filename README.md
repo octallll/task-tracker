@@ -26,8 +26,7 @@ docker compose up --build
 | PATCH | `/api/tasks/{id}/status` | сменить только статус |
 | GET / POST | `/api/tags` | список / создание тегов |
 | GET / PUT / DELETE | `/api/tags/{id}` | получить / изменить / удалить тег |
-| GET | `/api/info` | id экземпляра бэкенда |
-| GET | `/actuator/health`, `/actuator/prometheus` | health-check и метрики |   
+| GET | `:8081/actuator/health`, `:8081/actuator/prometheus` | health-check и метрики (отдельный порт) |   
 
 ## Переменные окружения бэкенда
 
@@ -37,6 +36,7 @@ docker compose up --build
 | `DB_USER` | да | — | пользователь БД |
 | `DB_PASSWORD` | да | — | пароль БД |
 | `PORT` | нет | `8080` | HTTP-порт |
+| `MANAGEMENT_PORT` | нет | `8081` | порт health-check и метрик |
 | `LOG_LEVEL` | нет | `INFO` | уровень логирования |
 
 Фронтенд (nginx): `NGINX_PORT` (по умолчанию 80), `BACKEND_URL` (по умолчанию `http://backend:8080`).
