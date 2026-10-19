@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import task.tracker.domain.Board;
+import task.tracker.metrics.TrackerMetrics;
 import task.tracker.repository.BoardRepository;
 import task.tracker.repository.TaskRepository;
 import task.tracker.web.dto.BoardRequest;
@@ -17,6 +18,7 @@ public class BoardService {
 
     private final BoardRepository boards;
     private final TaskRepository tasks;
+    private final TrackerMetrics metrics;
 
     @Transactional(readOnly = true)
     public List<BoardResponse> findAll() {
@@ -35,7 +37,9 @@ public class BoardService {
     public BoardResponse create(BoardRequest request) {
         Board board = new Board();
         apply(board, request);
-        return BoardResponse.from(boards.save(board), 0);
+        Board saved = boards.save(board);
+        metrics.boardCreated();
+        return BoardResponse.from(saved, 0);
     }
 
     @Transactional

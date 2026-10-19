@@ -32,6 +32,10 @@ spec:
     metadata:
       labels:
         app: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       terminationGracePeriodSeconds: 40
       initContainers:
@@ -64,11 +68,14 @@ spec:
               name: postgres
               key: POSTGRES_PASSWORD
         ports:
-        - containerPort: 8080
+        - name: http
+          containerPort: 8080
+        - name: metrics
+          containerPort: 8081
         startupProbe:
           httpGet:
             path: /actuator/health/liveness
-            port: 8080
+            port: metrics
           failureThreshold: 30
           periodSeconds: 5
           timeoutSeconds: 3
@@ -76,7 +83,7 @@ spec:
           failureThreshold: 3
           httpGet:
             path: /actuator/health/readiness
-            port: 8080
+            port: metrics
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 3
@@ -84,7 +91,7 @@ spec:
           failureThreshold: 3
           httpGet:
             path: /actuator/health/liveness
-            port: 8080
+            port: metrics
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 3
