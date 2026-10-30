@@ -10,6 +10,7 @@ import task.tracker.domain.Tag;
 import task.tracker.domain.Task;
 import task.tracker.domain.TaskPriority;
 import task.tracker.domain.TaskStatus;
+import task.tracker.metrics.TrackerMetrics;
 import task.tracker.repository.TagRepository;
 import task.tracker.repository.TaskRepository;
 import task.tracker.web.dto.TaskRequest;
@@ -22,6 +23,7 @@ public class TaskService {
     private final TaskRepository tasks;
     private final TagRepository tags;
     private final BoardService boardService;
+    private final TrackerMetrics metrics;
 
     @Transactional(readOnly = true)
     public List<TaskResponse> findByBoard(Long boardId, TaskStatus status) {
@@ -42,21 +44,29 @@ public class TaskService {
         Task task = new Task();
         task.setBoard(boardService.get(boardId));
         apply(task, request);
-        return TaskResponse.from(tasks.saveAndFlush(task));
+        Task saved = tasks.saveAndFlush(task);
+        metrics.taskCreated(saved);
+        return TaskResponse.from(saved);
     }
 
     @Transactional
     public TaskResponse update(Long id, TaskRequest request) {
         Task task = get(id);
+        TaskStatus before = task.getStatus();
         apply(task, request);
-        return TaskResponse.from(tasks.saveAndFlush(task));
+        Task saved = tasks.saveAndFlush(task);
+        metrics.taskStatusChanged(saved, before);
+        return TaskResponse.from(saved);
     }
 
     @Transactional
     public TaskResponse changeStatus(Long id, TaskStatus status) {
         Task task = get(id);
+        TaskStatus before = task.getStatus();
         task.setStatus(status);
-        return TaskResponse.from(tasks.saveAndFlush(task));
+        Task saved = tasks.saveAndFlush(task);
+        metrics.taskStatusChanged(saved, before);
+        return TaskResponse.from(saved);
     }
 
     @Transactional

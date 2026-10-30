@@ -14,10 +14,15 @@ spring:
       ddl-auto: validate
 
 management:
+  server:
+    port: ${MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
         include: health,prometheus
+  metrics:
+    tags:
+      application: task-tracker-backend
 
 logging:
   level:
