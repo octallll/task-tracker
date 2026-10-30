@@ -40,7 +40,10 @@ data:
           }
           if !exists(."log.level") {
             msg = string(.message) ?? ""
-            if match(msg, r'(?i)\b(error|fatal|panic|crit|emerg|alert)\b') {
+            lvl, lvl_err = parse_regex(msg, r'\blevel=(?P<value>\w+)')
+            if lvl_err == null {
+              ."log.level" = upcase(string!(lvl.value))
+            } else if match(msg, r'(?i)\b(error|fatal|panic|crit|emerg|alert)\b') {
               ."log.level" = "ERROR"
             } else if match(msg, r'(?i)\bwarn(ing)?\b') {
               ."log.level" = "WARN"
