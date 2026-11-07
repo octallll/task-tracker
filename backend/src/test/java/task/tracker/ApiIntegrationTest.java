@@ -126,6 +126,8 @@ class ApiIntegrationTest {
                 .contains("tracker_tasks_completed_total")
                 .contains("tracker_task_lead_time_seconds_bucket")
                 .contains("tracker_tasks{application=\"task-tracker-backend\",status=\"DONE\"}")
-                .contains("tracker_tasks_overdue");
+                .contains("tracker_tasks_overdue")
+                .contains("http_server_requests_seconds_bucket")
+                .contains("le=\"0.3\"");
     }
 }
