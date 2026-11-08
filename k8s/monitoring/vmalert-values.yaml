@@ -1,0 +1,68 @@
+server:
+  datasource:
+    url: http://vm-single-victoria-metrics-single-server.monitoring.svc:8428
+  remoteWrite:
+    url: http://vm-single-victoria-metrics-single-server.monitoring.svc:8428
+  remoteRead:
+    url: http://vm-single-victoria-metrics-single-server.monitoring.svc:8428
+  extraArgs:
+    external.url: http://localhost:8880
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+alertmanager:
+  enabled: true
+  baseURL: http://localhost:9093
+  resources:
+    requests:
+      cpu: 20m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+  extraVolumes:
+    - name: telegram
+      secret:
+        secretName: alertmanager-telegram
+  extraVolumeMounts:
+    - name: telegram
+      mountPath: /etc/alertmanager/telegram
+      readOnly: true
+  config:
+    global:
+      resolve_timeout: 5m
+    templates:
+      - /config/*.tmpl
+    route:
+      receiver: telegram
+      group_by: ["alertname"]
+      group_wait: 30s
+      group_interval: 2m
+      repeat_interval: 4h
+    inhibit_rules:
+      - source_matchers: ['alertname="TrackerBackendDown"']
+        target_matchers: ['alertname=~"TrackerApi.*|TrackerJvm.*|TrackerDbPool.*"']
+    receivers:
+      - name: telegram
+        telegram_configs:
+          - bot_token_file: /etc/alertmanager/telegram/bot_token
+            chat_id: 834231360
+            parse_mode: HTML
+            send_resolved: true
+            message: '{{ template "telegram.tracker" . }}'
+  templates:
+    telegram.tmpl: |
+      {{ define "telegram.tracker" }}
+      {{- range .Alerts }}
+      {{- if eq .Status "firing" }}🔥 <b>{{ .Labels.alertname }}</b>{{ else }}✅ <b>{{ .Labels.alertname }}</b> — решено{{ end }}
+      Важность: <b>{{ .Labels.severity }}</b>, сервис: {{ .Labels.service }}
+      {{ .Annotations.summary }}
+      {{ .Annotations.description }}
+      Начало: {{ .StartsAt.Local.Format "02.01.2006 15:04:05" }}
+      {{ end }}
+      {{- end }}
