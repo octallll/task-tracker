@@ -9,5 +9,6 @@ eval $(minikube docker-env)
 
 docker build -t task-tracker-backend:$VERSION -f backend/Dockerfile .
 docker build -t task-tracker-frontend:$VERSION frontend
+docker build -t task-tracker-prober:$VERSION prober
 
 minikube image ls | grep task-tracker

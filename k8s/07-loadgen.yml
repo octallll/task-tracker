@@ -1,0 +1,40 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgen
+  namespace: task-tracker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loadgen
+  template:
+    metadata:
+      labels:
+        app: loadgen
+    spec:
+      containers:
+      - image: curlimages/curl:8.23.0
+        name: loadgen
+        env:
+        - name: TARGET
+          value: http://frontend
+        command:
+        - sh
+        - -c
+        - |
+          while true; do
+            curl -s -o /dev/null -m 3 "$TARGET/api/boards"
+            curl -s -o /dev/null -m 3 "$TARGET/api/tags"
+            curl -s -o /dev/null -m 3 "$TARGET/api/boards"
+            sleep 1
+          done
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 32Mi
+...

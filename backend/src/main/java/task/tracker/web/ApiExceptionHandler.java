@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import task.tracker.fault.FaultInjectedException;
 import task.tracker.service.NotFoundException;
 
 @RestControllerAdvice
@@ -44,6 +45,11 @@ public class ApiExceptionHandler {
                 .addKeyValue("error.message", e.getMostSpecificCause().getMessage())
                 .log("Data integrity violation");
         return problem(Level.WARN, request, HttpStatus.CONFLICT, "Data conflict", null);
+    }
+
+    @ExceptionHandler(FaultInjectedException.class)
+    public ProblemDetail injected(FaultInjectedException e, HttpServletRequest request) {
+        return problem(Level.ERROR, request, HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), null);
     }
 
     @ExceptionHandler(Exception.class)
