@@ -1,0 +1,110 @@
+server:
+  config:
+    alerts:
+      groups:
+        - name: task-tracker-service
+          interval: 30s
+          rules:
+            - alert: TrackerApiErrorBudgetBurn
+              expr: |
+                (
+                  1 - sum(rate(http_server_requests_seconds_count{uri=~"/api/.*", status!~"5.."}[5m]))
+                    / sum(rate(http_server_requests_seconds_count{uri=~"/api/.*"}[5m]))
+                ) > 14.4 * (1 - 0.99)
+                and
+                (
+                  1 - sum(rate(http_server_requests_seconds_count{uri=~"/api/.*", status!~"5.."}[1m]))
+                    / sum(rate(http_server_requests_seconds_count{uri=~"/api/.*"}[1m]))
+                ) > 14.4 * (1 - 0.99)
+              for: 1m
+              labels:
+                severity: critical
+                service: task-tracker-backend
+              annotations:
+                summary: "API быстро сжигает бюджет ошибок"
+                description: "Доля ответов 5xx за 5 минут {{ $value | humanizePercentage }}, это больше 14,4% (burn rate > 14,4 для SLO 99%). При такой скорости месячный бюджет ошибок закончится примерно за 2 дня."
+
+            - alert: TrackerApiLatencyDegraded
+              expr: |
+                sum(rate(http_server_requests_seconds_bucket{uri=~"/api/.*", le="0.3"}[5m]))
+                  / sum(rate(http_server_requests_seconds_count{uri=~"/api/.*"}[5m]))
+                < 0.95
+              for: 2m
+              labels:
+                severity: warning
+                service: task-tracker-backend
+              annotations:
+                summary: "API отвечает медленно"
+                description: "Быстрее 300 мс отвечает только {{ $value | humanizePercentage }} запросов, цель SLO 95%."
+
+            - alert: TrackerProberFailing
+              expr: max_over_time(prober_up[2m]) == 0
+              for: 1m
+              labels:
+                severity: critical
+                service: task-tracker
+              annotations:
+                summary: "Пользовательский сценарий не проходит"
+                description: "Пробер уже 3 минуты не может пройти сценарий «создать доску → задачу → закрыть → удалить». Сервис недоступен для пользователей."
+
+            - alert: TrackerProberAbsent
+              expr: absent(prober_up)
+              for: 2m
+              labels:
+                severity: warning
+                service: task-tracker
+              annotations:
+                summary: "Нет данных от пробера"
+                description: "Метрики пробера не собираются 2 минуты: пробер не запущен или не находится через service discovery. SLI по пробам сейчас не считается."
+
+        - name: task-tracker-runtime
+          interval: 30s
+          rules:
+            - alert: TrackerBackendDown
+              expr: |
+                sum(up{namespace="task-tracker", app="backend"}) == 0
+                or
+                absent(up{namespace="task-tracker", app="backend"})
+              for: 1m
+              labels:
+                severity: critical
+                service: task-tracker-backend
+              annotations:
+                summary: "Нет ни одного доступного экземпляра бэкенда"
+                description: "VictoriaMetrics не может собрать метрики ни с одного пода бэкенда больше минуты: поды упали, не запускаются или их нет."
+
+            - alert: TrackerJvmHeapHigh
+              expr: |
+                sum by (pod) (jvm_memory_used_bytes{namespace="task-tracker", area="heap"})
+                  / sum by (pod) (jvm_memory_max_bytes{namespace="task-tracker", area="heap"})
+                > 0.85
+              for: 5m
+              labels:
+                severity: warning
+                service: task-tracker-backend
+              annotations:
+                summary: "JVM почти исчерпала heap"
+                description: "Под {{ $labels.pod }} использует {{ $value | humanizePercentage }} heap дольше 5 минут. Возможна утечка памяти, дальше начнутся долгие паузы GC и OutOfMemoryError."
+
+            - alert: TrackerDbPoolExhausted
+              expr: sum by (pod) (hikaricp_connections_pending{namespace="task-tracker"}) > 0
+              for: 2m
+              labels:
+                severity: warning
+                service: task-tracker-backend
+              annotations:
+                summary: "Запросы ждут свободное соединение с БД"
+                description: "В поде {{ $labels.pod }} {{ $value }} потоков ждут соединение из пула HikariCP дольше 2 минут: пул мал или запросы к базе зависают."
+
+        - name: task-tracker-database
+          interval: 30s
+          rules:
+            - alert: TrackerPostgresDown
+              expr: pg_up{namespace="task-tracker"} == 0
+              for: 1m
+              labels:
+                severity: critical
+                service: task-tracker-postgres
+              annotations:
+                summary: "PostgreSQL недоступна"
+                description: "postgres-exporter не может подключиться к базе дольше минуты."
